@@ -1,0 +1,4 @@
+requests
+pygerduty
+redis
+pyyaml
