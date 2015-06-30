@@ -8,17 +8,15 @@ class Slave(pingermaster.Master):
 
     def __init__(self):
         self.redis = redis.StrictRedis(host='localhost', port=6379, db=0)
-        self.pubsub = self.redis.pubsub()
-        self.pubsub.subscribe(['checks'])
         self.log = logging.getLogger(self.__class__.__name__)
 
     def run(self):
-        for item in self.pubsub.listen():
+        while True:
+            item = self.redis.blpop('checks')
             print item
-            if item['data'] != 1:
-                item = json.loads(item['data'])
-                result = self.check(item['url'], item['params'])
-                self.redis.publish('results', json.dumps(result))
+            check = json.loads(item[1])
+            result = self.check(check['url'], check['params'])
+            self.redis.publish('results', json.dumps(result))
             
     def check(self, url, params):
         self.log.info("checking {0}".format(url))

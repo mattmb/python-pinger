@@ -34,7 +34,7 @@ class Master:
         if last_check + params['interval'] <= now_time:
             self.redis.set(self.key(url, 'time'), int(time.time()))
             self.log.info("publishing check {0}".format(url))
-            self.redis.publish('checks', json.dumps({'url': url, 'params':
+            self.redis.rpush('checks', json.dumps({'url': url, 'params':
                 params}))
 
     def handle_result(self, url, params, result, message, details):
