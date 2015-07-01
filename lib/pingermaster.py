@@ -3,17 +3,14 @@ import redis
 import yaml
 import json
 import time
-import pygerduty
-import requests
 import threading
 from handlers import Handler
+
 
 class Config:
     def __init__(self):
         with open('./checks.yaml') as f:
             self.config = yaml.load(f)
-
-
 
 
 class Master:
@@ -37,8 +34,8 @@ class Master:
         if last_check + params['interval'] <= now_time:
             self.redis.set(self.key(url, 'time'), int(time.time()))
             self.log.info("publishing check {0}".format(url))
-            self.redis.rpush('checks', json.dumps({'url': url, 'params':
-                params}))
+            self.redis.rpush('checks',
+                             json.dumps({'url': url, 'params': params}))
 
     def handle_result(self, url, params, result, message, details):
         down = self.redis.get(self.key(url, 'down'))
@@ -48,14 +45,14 @@ class Master:
             num_failures = int(self.redis.get(self.key(url, 'failures')))
             if num_failures >= params['failed_checks'] and not down:
                 message = "{0} DOWN {1}".format(url, message)
-                handler.send(message, details)
+                handler.down_alert(url, message, details)
                 self.redis.set(self.key(url, 'down'), True)
             num_failures += 1
             self.redis.set(self.key(url, 'failures'), num_failures)
 
         if result == 'UP' and down:
             message = "{0} UP".format(url)
-            handler.send(url, message)
+            handler.up_alert(url, message)
             self.redis.delete(self.key(url, 'down'))
             self.redis.set(self.key(url, 'failures'), 0)
 
